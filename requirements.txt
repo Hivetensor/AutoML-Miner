@@ -1,0 +1,21 @@
+# Core requirements
+torch>=2.0.0
+numpy>=1.21.0
+requests>=2.31.0
+
+# GUI requirements
+PySide6>=6.5.0
+
+# Development/testing requirements
+pytest>=7.0.0
+pytest-cov>=3.0.0
+
+# Documentation
+sphinx>=5.0.0
+sphinx-rtd-theme>=1.0.0
+
+# Formatting/linting
+black>=22.0.0
+flake8>=4.0.0
+isort>=5.10.0
+mypy>=0.950
