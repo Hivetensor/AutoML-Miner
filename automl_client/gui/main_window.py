@@ -13,10 +13,8 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QFont, QIcon
 
 from .theme import SolarTheme
-from .screens.wallet_screen import WalletScreen
-from .screens.mining_screen import MiningScreen  
-from .screens.settings_screen import SettingsScreen
-from .screens.dashboard_screen import DashboardScreen
+from .components import HexLogo
+from .screens import DashboardScreen, WalletScreen, MiningScreen, SettingsScreen
 
 # Local imports for backend functionality
 from ..stop_flag import StopFlag
@@ -93,21 +91,27 @@ class ModernMiningWindow(QMainWindow):
         """Create the navigation sidebar."""
         sidebar = QWidget()
         sidebar.setObjectName("sidebar")
+        sidebar_layout = QVBoxLayout(sidebar)
+        sidebar_layout.setContentsMargins(0, 0, 0, 0)
+        sidebar_layout.setSpacing(0)
         
-        layout = QVBoxLayout(sidebar)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        # Add logo area
+        logo_area = QWidget()
+        logo_area.setObjectName("logo_area")
+        logo_layout = QVBoxLayout(logo_area)
         
-        # Logo/Header area
-        header_widget = self._create_header()
-        layout.addWidget(header_widget)
+        # Add logo
+        self.logo = HexLogo()
+        logo_layout.addWidget(self.logo)
+        
+        sidebar_layout.addWidget(logo_area)
         
         # Navigation buttons
         nav_data = [
-            ("dashboard", "Dashboard", "📊"),
-            ("wallet", "Wallet Setup", "💳"),
-            ("mining", "Mining", "⛏️"),
-            ("settings", "Settings", "⚙️"),
+            ("dashboard", "Dashboard", "■"),
+            ("wallet", "Wallet Setup", "◇"),
+            ("mining", "Mining", "◆"),
+            ("settings", "Settings", "◉"),
         ]
         
         for screen_id, title, icon in nav_data:
@@ -117,48 +121,32 @@ class ModernMiningWindow(QMainWindow):
             btn.clicked.connect(lambda checked, s=screen_id: self._switch_screen(s))
             
             self.nav_buttons[screen_id] = btn
-            layout.addWidget(btn)
+            sidebar_layout.addWidget(btn)
         
         # Set dashboard as default
         self.nav_buttons["dashboard"].setChecked(True)
         
         # Spacer to push everything to top
-        layout.addStretch()
+        sidebar_layout.addStretch()
         
         # Version info at bottom
         version_label = QLabel("v1.0.0")
         version_label.setObjectName("info")
         version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         version_label.setContentsMargins(20, 10, 20, 20)
-        layout.addWidget(version_label)
+        sidebar_layout.addWidget(version_label)
         
         return sidebar
     
-    def _create_header(self) -> QWidget:
-        """Create the header area with logo and title."""
-        header = QWidget()
-        layout = QVBoxLayout(header)
-        layout.setContentsMargins(20, 30, 20, 30)
+    def _create_content_area(self) -> QWidget:
+        """Create the main content area where screens are displayed."""
+        content_area = QWidget()
+        content_area.setObjectName("content_area")
         
-        # App title
-        title = QLabel("AutoML Miner")
-        title.setObjectName("title")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(title)
+        self.content_layout = QVBoxLayout(content_area)
+        self.content_layout.setContentsMargins(0, 0, 0, 0)
         
-        # Subtitle
-        subtitle = QLabel("Neural Component Pool")
-        subtitle.setObjectName("subtitle")
-        subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(subtitle)
-        
-        # Separator line
-        separator = QFrame()
-        separator.setFrameShape(QFrame.Shape.HLine)
-        separator.setStyleSheet(f"background-color: {SolarTheme.OBSIDIAN_600}; margin: 20px 0;")
-        layout.addWidget(separator)
-        
-        return header
+        return content_area
     
     def _create_screens(self):
         """Create and add all screen widgets."""
@@ -200,7 +188,7 @@ class ModernMiningWindow(QMainWindow):
         """Apply the solar theme to the window."""
         self.setStyleSheet(SolarTheme.get_main_stylesheet())
         
-        # Apply fonts
+        # Apply theme and fonts
         fonts = SolarTheme.get_font_system()
         self.setFont(fonts['primary'])
     

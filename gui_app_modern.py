@@ -46,9 +46,7 @@ def main():
         app.setApplicationVersion("1.0.0")
         app.setOrganizationName("Neural Component Pool")
         
-        # Enable high DPI scaling
-        app.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling, True)
-        app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
+        # High DPI support is automatically enabled in Qt6
         
         # Import and create main window
         from automl_client.gui import ModernMiningWindow
