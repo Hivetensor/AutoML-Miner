@@ -6,7 +6,7 @@ torchvision_data = collect_data_files('torchvision')
 numpy_data = collect_data_files('numpy')
 
 a = Analysis(
-    ['gui_app_pyside.py'],
+    ['gui_app_modern.py'],
     pathex=[],
     binaries=[],
     datas=[
@@ -24,7 +24,18 @@ a = Analysis(
         'torchvision.datasets',
         'substrateinterface',
         'cryptography',
-        'automl_client.utils.resource_path'
+        'automl_client.utils.resource_path',
+        'automl_client.gui',
+        'automl_client.gui.main_window',
+        'automl_client.gui.theme',
+        'automl_client.gui.components',
+        'automl_client.gui.components.hex_logo',
+        'automl_client.gui.screens',
+        'automl_client.gui.screens.dashboard_screen',
+        'automl_client.gui.screens.wallet_screen',
+        'automl_client.gui.screens.mining_screen',
+        'automl_client.gui.screens.settings_screen',
+        'automl_client.gui.screens.base_screen'
     ],
     hookspath=[],
     hooksconfig={},

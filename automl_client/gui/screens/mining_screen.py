@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QTimer, QRunnable, QThreadPool, QObject, Signal, Slot
 from .base_screen import BaseScreen
+from ..components import ModernLogManager
 
 if TYPE_CHECKING:
     from ..main_window import ModernMiningWindow
@@ -229,6 +230,9 @@ class MiningScreen(BaseScreen):
         self.log_text.setMaximumHeight(200)
         layout.addWidget(self.log_text)
         
+        # Initialize enhanced log manager
+        self.log_manager = ModernLogManager(self.log_text, max_lines=1000)
+        
         # Log controls
         log_controls = QHBoxLayout()
         
@@ -337,20 +341,12 @@ class MiningScreen(BaseScreen):
         self.current_operation_label.setText(message)
     
     def _add_log(self, level: str, message: str):
-        """Add a log entry."""
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        log_entry = f"[{timestamp}] {level}: {message}"
-        self.log_text.append(log_entry)
-        
-        # Auto-scroll to bottom
-        cursor = self.log_text.textCursor()
-        cursor.movePosition(cursor.MoveOperation.End)
-        self.log_text.setTextCursor(cursor)
+        """Add a log entry using the enhanced log manager."""
+        self.log_manager.append(level.upper(), message)
     
     def _clear_logs(self):
         """Clear the log text area."""
-        self.log_text.clear()
+        self.log_manager.clear()
     
     def update_mining_status(self):
         """Update mining status displays."""
