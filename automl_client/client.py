@@ -1,5 +1,6 @@
 """Client API for connecting to the Neural Component Pool."""
 
+import math
 import json
 import uuid
 import requests
@@ -26,6 +27,10 @@ from .genetic.serialize import (
 
 from .evolution_engine import EvolutionEngine
 from .evaluation_strategy import DefaultPytorchEvaluation, OptimizerEvaluation
+
+
+LOW_FITNESS_VALUE = -99999  # Value to use instead of -inf for JSON serialization
+
 
 class PoolClient(abc.ABC):
     """Client for interacting with the Neural Component Pool server."""
@@ -315,6 +320,18 @@ class PoolClient(abc.ABC):
         self._ensure_session()
         
         auth_data = self._create_signature_data()
+
+        # Replace -inf values in evaluations
+        for eval_item in evaluations:
+            if math.isinf(eval_item.get("score", 0)) and eval_item["score"] < 0:
+                eval_item["score"] = LOW_FITNESS_VALUE
+            
+            # Also check criteria if it exists
+            if "criteria" in eval_item:
+                for key, value in eval_item["criteria"].items():
+                    if math.isinf(value) and value < 0:
+                        eval_item["criteria"][key] = LOW_FITNESS_VALUE
+
         data = {
             **auth_data,
             "batch_id": str(batch_id),
@@ -553,9 +570,9 @@ class PoolClient(abc.ABC):
                 # Create evaluation record
                 evaluations.append({
                 "function_id": function_id,
-                "score": float(score),
+                "score": float(score) if not (score is None or math.isnan(score) or math.isinf(score) and score < 0) else LOW_FITNESS_VALUE,
                 "criteria": {
-                    "accuracy": float(score),
+                    "accuracy": float(score) if not (score is None or math.isnan(score) or math.isinf(score) and score < 0) else LOW_FITNESS_VALUE,
                     "stability": 1.0,
                     "efficiency": 1.0
                     }

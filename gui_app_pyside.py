@@ -3,6 +3,7 @@ handling (create / import by phrase / load from disk) and user‑selecta
 root directory. Compatible with the new cross‑platform wallet implementation.
 """
 
+import collections
 import sys
 import os
 import time
@@ -25,18 +26,18 @@ from substrateinterface import Keypair
 # Local imports
 from automl_client.stop_flag import StopFlag
 from automl_client.wallet import Wallet
-try:
-    from automl_client.client import BittensorPoolClient
-except ImportError:
-    print("Error: Required modules not found. Please install automl_client.")
-    sys.exit(1)
+#try:
+from automl_client.client import BittensorPoolClient
+# except ImportError:
+#     print("Error: Required modules not found. Please install automl_client.")
+#     sys.exit(1)
 
 LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 log_queue: "queue.Queue[str]" = queue.Queue()
 
 SETTINGS = {
-    "api_url": "http://localhost:8000",
-    "max_cycles": 100,
+    "api_url": "http://pool.hivetensor.com:1337",
+    "max_cycles": 0,
     "cycle_timeout": 120,
 }
 
@@ -65,6 +66,72 @@ class LogProcessor(QObject):
             elif "WARNING" in message:
                 level = "warning"
             self.log_signal.emit(message, level)
+
+class LogManager:
+    """Manages logs with a fixed buffer size to prevent overflow."""
+    
+    def __init__(self, text_edit: QTextEdit, max_lines: int = 1000):
+        """
+        Initialize the log manager.
+        
+        Args:
+            text_edit: The QTextEdit widget to display logs
+            max_lines: Maximum number of lines to keep
+        """
+        self.text_edit = text_edit
+        self.max_lines = max_lines
+        self.log_buffer = collections.deque(maxlen=max_lines)
+    
+    def append(self, message: str, level: str = "info"):
+        """
+        Append a log message with appropriate formatting.
+        
+        Args:
+            message: The log message to append
+            level: Log level ('info', 'warning', 'error')
+        """
+        color = {"error": "#F55", "warning": "#FA0", "info": "#0F0"}.get(level, "#0F0")
+        formatted_msg = f"<span style='color:{color}'>{message}</span>"
+        
+        # Add to circular buffer
+        self.log_buffer.append(formatted_msg)
+        
+        # Two approaches to update the display:
+        
+        # APPROACH 1: Just append and trim if needed
+        self.text_edit.append(formatted_msg)
+        self._trim_excess_lines()
+        
+        # APPROACH 2: Replace entire content (more efficient with very large logs)
+        # self._refresh_display()
+        
+        # Scroll to bottom
+        self._scroll_to_bottom()
+    
+    def _trim_excess_lines(self):
+        """Remove oldest lines if the count exceeds the maximum."""
+        doc = self.text_edit.document()
+        while doc.blockCount() > self.max_lines:
+            cursor = QTextCursor(doc)
+            cursor.select(QTextCursor.BlockUnderCursor)
+            cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor)
+            cursor.removeSelectedText()
+    
+    def _refresh_display(self):
+        """Refresh the entire display with contents from the buffer."""
+        self.text_edit.clear()
+        self.text_edit.setHtml("<br>".join(self.log_buffer))
+    
+    def _scroll_to_bottom(self):
+        """Scroll the text edit to show the latest logs."""
+        cursor = self.text_edit.textCursor()
+        cursor.movePosition(QTextCursor.End)
+        self.text_edit.setTextCursor(cursor)
+    
+    def clear(self):
+        """Clear all logs."""
+        self.log_buffer.clear()
+        self.text_edit.clear()
 
 # --------------------------------------------------------------------------------------
 #  Miner task wrapper (unchanged except name refactor)
@@ -140,6 +207,8 @@ class MiningWindow(QMainWindow):
         self._build_ui()
         self._configure_logging()
 
+        self.log_manager = LogManager(self.log_view, max_lines=1000)
+
     # ------------------------------------------------------------------ UI construction
     def _build_ui(self):
         self.setWindowTitle("AutoML Miner")
@@ -162,7 +231,7 @@ class MiningWindow(QMainWindow):
         w_box = QGroupBox("Wallet")
         w_lay = QVBoxLayout(w_box)
 
-        self.wallet_dir_edit = QLineEdit(str(Path.home() / ".bittensor" / "wallets"))
+        self.wallet_dir_edit = QLineEdit(str(Path.home() / ".automl_pool" / "wallets"))
         browse_btn = QPushButton("Browse …")
         browse_btn.clicked.connect(self._browse_wallet_dir)
         dir_row = QHBoxLayout(); dir_row.addWidget(self.wallet_dir_edit); dir_row.addWidget(browse_btn)
@@ -359,9 +428,7 @@ class MiningWindow(QMainWindow):
         self._append_log(f"{pct}% – {msg}")
 
     def _append_log(self, message: str, level: str = "info"):
-        color = {"error": "#F55", "warning": "#FA0", "info": "#0F0"}.get(level, "#0F0")
-        self.log_view.append(f"<span style='color:{color}'>{message}</span>")
-        cursor = self.log_view.textCursor(); cursor.movePosition(QTextCursor.End); self.log_view.setTextCursor(cursor)
+        self.log_manager.append(message, level)
 
     # ------------------------------------------------------------------ window close
     def closeEvent(self, event):

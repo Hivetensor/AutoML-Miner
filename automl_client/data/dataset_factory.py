@@ -13,6 +13,9 @@ try:
 except ImportError:
     torchvision_available = False
 
+# Import utility for resource paths
+from ..utils.resource_path import get_resource_path
+
 logger = logging.getLogger(__name__)
 
 class DatasetFactory:
@@ -90,9 +93,9 @@ class DatasetFactory:
         flatten = config.get("flatten", True)
         normalize = config.get("normalize", True)
         one_hot = config.get("one_hot", True)
-        data_path = config.get("data_path", './data')
+        data_path = get_resource_path(config.get("data_path", 'data'))
         
-        logger.info("Loading MNIST dataset")
+        logger.info(f"Loading MNIST dataset from path: {data_path}")
         
         # Try to load using torchvision if available
         if torchvision_available:
@@ -300,7 +303,7 @@ class DatasetFactory:
         if torchvision_available:
             try:
                 config_copy = config.copy()
-                data_path = config_copy.get("data_path", './data')
+                data_path = get_resource_path(config_copy.get("data_path", 'data'))
                 
                 # Define transformations similar to MNIST
                 transform = transforms.Compose([
@@ -416,7 +419,7 @@ class DatasetFactory:
         if torchvision_available:
             try:
                 config_copy = config.copy()
-                data_path = config_copy.get("data_path", './data')
+                data_path = get_resource_path(config_copy.get("data_path", 'data'))
                 
                 # Define CIFAR transformations
                 transform = transforms.Compose([
